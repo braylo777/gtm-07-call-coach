@@ -1,0 +1,618 @@
+{
+ "stage": 7,
+ "repo": "gtm-07-call-coach",
+ "title": "AI Sales Enablement & Coaching",
+ "tagline": "Turn sales calls into coaching and battlecards: vector search over transcripts, per-call metrics with coaching flags and rep trends, and competitor battlecards built from real objections and playbook answers.",
+ "why": "Every sales team records its calls, and almost nobody listens to them. The value is in three questions. Where did a buyer say X? Is this rep getting better? What do we say when a competitor comes up? An LLM can draft the answers, but the facts must come from the transcript, with timestamps, so a manager can check them in ten seconds. This repo is the retrieval and metrics layer an LLM summary would stand on.",
+ "covers": [
+  "TF-IDF vector index over utterance windows, cosine ranking, overlap suppression, call / speaker / timestamp on each hit",
+  "Per-call coaching: rep talk %, rep questions, longest monologue in seconds, topic hits with timestamps, next steps found",
+  "Coaching flags against targets (talk ratio, questions, monologue, no next step) and a 0\u2013100 call score",
+  "Rep trend across calls: talk % and questions first vs last call, improving yes / no",
+  "Battlecards: competitor aliases, mentions, win rate when mentioned, objections in the same or next utterance, playbook response and proof, verbatim quotes"
+ ],
+ "gaps": [
+  "No Gong / Chorus API connection: transcripts are synthetic JSON; competitor names are fictional",
+  "Vectors are TF-IDF, not neural embeddings; the index is rebuilt per request",
+  "No LLM summarization call: the outputs here are the cited facts a summary prompt would use"
+ ],
+ "ops": [
+  {
+   "op": "search_calls",
+   "label": "Transcript search",
+   "help": "Search three synthetic calls for a phrase. Each hit has the call, timestamp and two utterances of context.",
+   "input": {
+    "query": "security review SOC 2 data residency",
+    "top_k": 3,
+    "window": 2,
+    "calls": [
+     {
+      "call_id": "call_101",
+      "rep": "alex",
+      "outcome": "lost",
+      "utterances": [
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 0,
+        "text": "Thanks for the time. Let me walk you through our platform, we have routing, scoring, enrichment, dashboards and a full AI layer on top, and customers love it because it replaces four tools."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 99,
+        "text": "We also integrate with Salesforce and HubSpot, and setup is usually two weeks, and the pricing is per seat with volume discounts."
+       },
+       {
+        "speaker": "Dana",
+        "role": "prospect",
+        "t": 165,
+        "text": "We are also looking at QuotaPilot. Their quote was cheaper per seat."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 201,
+        "text": "Sure. Any other questions?"
+       },
+       {
+        "speaker": "Dana",
+        "role": "prospect",
+        "t": 213,
+        "text": "Our security team will need a SOC 2 report before any review."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 249,
+        "text": "Got it, I can look into it."
+       }
+      ]
+     },
+     {
+      "call_id": "call_102",
+      "rep": "alex",
+      "outcome": "won",
+      "utterances": [
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 0,
+        "text": "Before I show anything, what made you take this call now?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 33,
+        "text": "Our SDRs miss hot accounts. Leads sit for two days before anyone calls."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 72,
+        "text": "How are leads routed today? Who owns the rules?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 99,
+        "text": "RevOps owns them in Salesforce, but it is a mess of flows."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 135,
+        "text": "What does a missed hot account cost you in a quarter?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 168,
+        "text": "Probably three or four deals. We tried RivalCRM's add-on but the integration broke every sync."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 213,
+        "text": "What would good look like in 90 days? Who else needs to sign off?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 255,
+        "text": "Under ten minutes to first touch. Our CFO signs anything over fifty thousand."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 294,
+        "text": "Makes sense. Next step: I'll send a two-page plan by Friday and let's schedule a 30-minute session with your CFO next week?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 360,
+        "text": "Yes, book it for Tuesday."
+       }
+      ]
+     },
+     {
+      "call_id": "call_103",
+      "rep": "alex",
+      "outcome": "open",
+      "utterances": [
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 0,
+        "text": "What changed since our last call? Where did the pilot land?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 33,
+        "text": "The pilot worked, but QuotaPilot came back with a lower price and a free onboarding package."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 81,
+        "text": "What did the pilot save your team per week? How did you measure it?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 123,
+        "text": "About 12 hours of manual routing a week. Security asked about data residency too."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 165,
+        "text": "Is price the only open item, or is the residency question a blocker?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 204,
+        "text": "Residency is a blocker for legal. Price is second."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 231,
+        "text": "Understood. I'll send our EU residency doc today. Can we review it with legal on Thursday?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 279,
+        "text": "Thursday works. Loop in our legal lead."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "op": "coach_calls",
+   "label": "Coach calls",
+   "help": "Measure each call against coaching targets and show the rep's trend from first call to last.",
+   "input": {
+    "targets": {
+     "max_rep_talk_pct": 60,
+     "min_rep_questions": 4,
+     "max_monologue_sec": 60
+    },
+    "topics": {
+     "pricing": [
+      "price",
+      "pricing",
+      "cheaper",
+      "discount",
+      "quote"
+     ],
+     "security": [
+      "security",
+      "soc 2",
+      "residency",
+      "legal"
+     ],
+     "decision": [
+      "cfo",
+      "sign off",
+      "signs"
+     ],
+     "competitor": [
+      "quotapilot",
+      "rivalcrm"
+     ]
+    },
+    "calls": [
+     {
+      "call_id": "call_101",
+      "rep": "alex",
+      "outcome": "lost",
+      "utterances": [
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 0,
+        "text": "Thanks for the time. Let me walk you through our platform, we have routing, scoring, enrichment, dashboards and a full AI layer on top, and customers love it because it replaces four tools."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 99,
+        "text": "We also integrate with Salesforce and HubSpot, and setup is usually two weeks, and the pricing is per seat with volume discounts."
+       },
+       {
+        "speaker": "Dana",
+        "role": "prospect",
+        "t": 165,
+        "text": "We are also looking at QuotaPilot. Their quote was cheaper per seat."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 201,
+        "text": "Sure. Any other questions?"
+       },
+       {
+        "speaker": "Dana",
+        "role": "prospect",
+        "t": 213,
+        "text": "Our security team will need a SOC 2 report before any review."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 249,
+        "text": "Got it, I can look into it."
+       }
+      ]
+     },
+     {
+      "call_id": "call_102",
+      "rep": "alex",
+      "outcome": "won",
+      "utterances": [
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 0,
+        "text": "Before I show anything, what made you take this call now?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 33,
+        "text": "Our SDRs miss hot accounts. Leads sit for two days before anyone calls."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 72,
+        "text": "How are leads routed today? Who owns the rules?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 99,
+        "text": "RevOps owns them in Salesforce, but it is a mess of flows."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 135,
+        "text": "What does a missed hot account cost you in a quarter?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 168,
+        "text": "Probably three or four deals. We tried RivalCRM's add-on but the integration broke every sync."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 213,
+        "text": "What would good look like in 90 days? Who else needs to sign off?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 255,
+        "text": "Under ten minutes to first touch. Our CFO signs anything over fifty thousand."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 294,
+        "text": "Makes sense. Next step: I'll send a two-page plan by Friday and let's schedule a 30-minute session with your CFO next week?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 360,
+        "text": "Yes, book it for Tuesday."
+       }
+      ]
+     },
+     {
+      "call_id": "call_103",
+      "rep": "alex",
+      "outcome": "open",
+      "utterances": [
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 0,
+        "text": "What changed since our last call? Where did the pilot land?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 33,
+        "text": "The pilot worked, but QuotaPilot came back with a lower price and a free onboarding package."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 81,
+        "text": "What did the pilot save your team per week? How did you measure it?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 123,
+        "text": "About 12 hours of manual routing a week. Security asked about data residency too."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 165,
+        "text": "Is price the only open item, or is the residency question a blocker?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 204,
+        "text": "Residency is a blocker for legal. Price is second."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 231,
+        "text": "Understood. I'll send our EU residency doc today. Can we review it with legal on Thursday?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 279,
+        "text": "Thursday works. Loop in our legal lead."
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "op": "battlecards",
+   "label": "Battlecards",
+   "help": "Build one battlecard per competitor from the calls, with the objections buyers raised and the playbook answer.",
+   "input": {
+    "competitors": {
+     "QuotaPilot": [
+      "quota pilot"
+     ],
+     "RivalCRM": [
+      "rival crm"
+     ]
+    },
+    "objections": {
+     "price": [
+      "cheaper",
+      "lower price",
+      "price",
+      "free"
+     ],
+     "integration": [
+      "integration",
+      "sync",
+      "broke"
+     ],
+     "onboarding": [
+      "onboarding",
+      "setup"
+     ],
+     "security": [
+      "security",
+      "residency",
+      "soc 2"
+     ]
+    },
+    "playbook": {
+     "price": {
+      "response": "Compare cost per routed hot account, not cost per seat. Show the pilot's hours saved times loaded cost.",
+      "proof": "Pilot: 12 hours a week saved"
+     },
+     "integration": {
+      "response": "Native bi-directional sync with field-level conflict rules; show the sync log in the demo.",
+      "proof": "99.9% sync success over 90 days (customer reference)"
+     },
+     "onboarding": {
+      "response": "Fixed 14-day onboarding with a named engineer; offer a success plan instead of a discount."
+     }
+    },
+    "calls": [
+     {
+      "call_id": "call_101",
+      "rep": "alex",
+      "outcome": "lost",
+      "utterances": [
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 0,
+        "text": "Thanks for the time. Let me walk you through our platform, we have routing, scoring, enrichment, dashboards and a full AI layer on top, and customers love it because it replaces four tools."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 99,
+        "text": "We also integrate with Salesforce and HubSpot, and setup is usually two weeks, and the pricing is per seat with volume discounts."
+       },
+       {
+        "speaker": "Dana",
+        "role": "prospect",
+        "t": 165,
+        "text": "We are also looking at QuotaPilot. Their quote was cheaper per seat."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 201,
+        "text": "Sure. Any other questions?"
+       },
+       {
+        "speaker": "Dana",
+        "role": "prospect",
+        "t": 213,
+        "text": "Our security team will need a SOC 2 report before any review."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 249,
+        "text": "Got it, I can look into it."
+       }
+      ]
+     },
+     {
+      "call_id": "call_102",
+      "rep": "alex",
+      "outcome": "won",
+      "utterances": [
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 0,
+        "text": "Before I show anything, what made you take this call now?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 33,
+        "text": "Our SDRs miss hot accounts. Leads sit for two days before anyone calls."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 72,
+        "text": "How are leads routed today? Who owns the rules?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 99,
+        "text": "RevOps owns them in Salesforce, but it is a mess of flows."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 135,
+        "text": "What does a missed hot account cost you in a quarter?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 168,
+        "text": "Probably three or four deals. We tried RivalCRM's add-on but the integration broke every sync."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 213,
+        "text": "What would good look like in 90 days? Who else needs to sign off?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 255,
+        "text": "Under ten minutes to first touch. Our CFO signs anything over fifty thousand."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 294,
+        "text": "Makes sense. Next step: I'll send a two-page plan by Friday and let's schedule a 30-minute session with your CFO next week?"
+       },
+       {
+        "speaker": "Lee",
+        "role": "prospect",
+        "t": 360,
+        "text": "Yes, book it for Tuesday."
+       }
+      ]
+     },
+     {
+      "call_id": "call_103",
+      "rep": "alex",
+      "outcome": "open",
+      "utterances": [
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 0,
+        "text": "What changed since our last call? Where did the pilot land?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 33,
+        "text": "The pilot worked, but QuotaPilot came back with a lower price and a free onboarding package."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 81,
+        "text": "What did the pilot save your team per week? How did you measure it?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 123,
+        "text": "About 12 hours of manual routing a week. Security asked about data residency too."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 165,
+        "text": "Is price the only open item, or is the residency question a blocker?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 204,
+        "text": "Residency is a blocker for legal. Price is second."
+       },
+       {
+        "speaker": "Alex",
+        "role": "rep",
+        "t": 231,
+        "text": "Understood. I'll send our EU residency doc today. Can we review it with legal on Thursday?"
+       },
+       {
+        "speaker": "Kim",
+        "role": "prospect",
+        "t": 279,
+        "text": "Thursday works. Loop in our legal lead."
+       }
+      ]
+     }
+    ]
+   }
+  }
+ ]
+}

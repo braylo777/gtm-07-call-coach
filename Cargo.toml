@@ -1,0 +1,23 @@
+[package]
+name = "gtm-07-call-coach"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Turn sales calls into coaching and battlecards: vector search over transcripts, per-call metrics with coaching flags and rep trends, and competitor battlecards built from real objections and playbook answers."
+repository = "https://github.com/braylo777/gtm-07-call-coach"
+
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "gtm-07-call-coach"
+path = "src/main.rs"
+
+[dependencies]
+serde_json = "=1.0.154"
+
+[profile.release]
+opt-level = "s"
+lto = true
+panic = "abort"
+codegen-units = 1
